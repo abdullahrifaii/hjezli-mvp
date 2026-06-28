@@ -9,10 +9,14 @@ from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker, Session
 
 # ==========================================
-# 1. DATABASE CONFIGURATION (SQLAlchemy)
+# 1. DATABASE CONFIGURATION (Secure Env Var)
 # ==========================================
-#DATABASE_URL = "YOUR_SUPABASE_CONNECTION_STRING"  # <-- Make sure your working string is here!
-DATABASE_URL = "postgresql://postgres.iyezlolfsvezzvzispto:ABdallah_11sqlpass@aws-1-eu-central-1.pooler.supabase.com:6543/postgres"
+# os.environ.get reads the variable from Render's secure settings panel dynamically
+DATABASE_URL = os.environ.get("DATABASE_URL", "sqlite:///./local_test.db")
+
+# Simple fix for a common SQLAlchemy/PostgreSQL compatibility quirks
+if DATABASE_URL.startswith("postgres://"):
+    DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql://", 1)
 
 engine = create_engine(DATABASE_URL)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
