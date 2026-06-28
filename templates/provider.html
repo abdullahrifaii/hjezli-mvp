@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hjezli Business Manager</title>
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+</head>
+<body class="bg-slate-50 text-gray-900 font-sans">
+
+    <nav class="bg-slate-800 text-white p-4 shadow-md">
+        <div class="max-w-4xl mx-auto flex justify-between items-center">
+            <h1 class="text-xl font-bold">Hjezli Manager (لوحة التحكم)</h1>
+            <a href="/" class="text-sm text-slate-300 hover:text-white">← View Main Site</a>
+        </div>
+    </nav>
+
+    <main class="max-w-4xl mx-auto p-4 grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div class="md:col-span-1 space-y-4">
+            <div class="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
+                <h2 class="font-bold text-lg mb-3 text-slate-700">Register Your Business</h2>
+                <form id="regForm" onsubmit="registerBusiness(event)" class="space-y-3">
+                    <div>
+                        <label class="block text-xs font-semibold text-gray-500">Business Name</label>
+                        <input type="text" id="bizName" required class="w-full p-2 border rounded bg-gray-50 text-sm">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-gray-500">Category</label>
+                        <select id="bizCat" class="w-full p-2 border rounded bg-gray-50 text-sm">
+                            <option value="Barber">Barber / Men's Salon</option>
+                            <option value="Beauty">Beauty Salon</option>
+                            <option value="Spa">Spa & Massage</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-gray-500">City / Location</label>
+                        <select id="bizLoc" class="w-full p-2 border rounded bg-gray-50 text-sm">
+                            <option value="Beirut">Beirut</option>
+                            <option value="Jounieh">Jounieh</option>
+                            <option value="Saida">Saida</option>
+                            <option value="Tripoli">Tripoli</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-gray-500">Business Phone (WhatsApp)</label>
+                        <input type="tel" id="bizPhone" placeholder="+961" required class="w-full p-2 border rounded bg-gray-50 text-sm">
+                    </div>
+                    <button type="submit" class="w-full bg-indigo-600 text-white p-2 rounded font-semibold text-sm hover:bg-indigo-500 shadow">
+                        Create Storefront
+                    </button>
+                </form>
+            </div>
+
+            <div class="bg-amber-50 p-4 rounded-lg shadow-sm border border-amber-200">
+                <h3 class="font-bold text-amber-900 text-sm flex items-center gap-1">💎 Upgrade to Premium</h3>
+                <p class="text-xs text-amber-800 mt-1">To get featured at the top of Hjezli, send **$5/month** to Whish Money account **#12345678**.</p>
+                <p class="text-xs text-amber-800 mt-2 font-semibold">Send a screenshot of your transfer receipt via WhatsApp to +961 70 000 000 to activate.</p>
+            </div>
+        </div>
+
+        <div class="md:col-span-2 space-y-4">
+            <div class="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
+                <h2 class="font-bold text-lg text-slate-700 mb-2">Your Live Appointments</h2>
+                <div class="flex gap-2 mb-4">
+                    <input type="number" id="checkProviderId" placeholder="Enter Business ID to check" class="p-2 border rounded text-sm w-full bg-gray-50">
+                    <button onclick="loadAppointments()" class="bg-slate-700 text-white px-4 py-2 rounded text-sm font-semibold hover:bg-slate-600">
+                        Fetch
+                    </button>
+                </div>
+                <div id="appointmentsList" class="space-y-2">
+                    <p class="text-gray-400 text-sm italic">Enter your generated Business ID above to view customer schedules.</p>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        async function registerBusiness(e) {
+            e.preventDefault();
+            const payload = {
+                business_name: document.getElementById('bizName').value,
+                category: document.getElementById('bizCat').value,
+                location: document.getElementById('bizLoc').value,
+                phone_number: document.getElementById('bizPhone').value
+            };
+
+            const res = await fetch('/api/providers', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+            const data = await res.json();
+
+            if (res.ok) {
+                alert(`🎉 Store Registered Successfully!\n\nYOUR BUSINESS ID IS: ${data.id}\nWrite this ID down! Use it to fetch your incoming appointments.`);
+                document.getElementById('regForm').reset();
+                document.getElementById('checkProviderId').value = data.id;
+                loadAppointments();
+            } else {
+                alert('Registration failed.');
+            }
+        }
+
+        async function loadAppointments() {
+            const pid = document.getElementById('checkProviderId').value;
+            if(!pid) return;
+
+            const res = await fetch(`/api/providers/${pid}/appointments`);
+            const appointments = await res.json();
+            const listDiv = document.getElementById('appointmentsList');
+            listDiv.innerHTML = '';
+
+            if(appointments.length === 0) {
+                listDiv.innerHTML = `<p class="text-sm text-gray-500">No appointments scheduled yet.</p>`;
+                return;
+            }
+
+            appointments.forEach(a => {
+                const appDate = new Date(a.appointment_time).toLocaleString();
+                // Create clean WhatsApp dynamic link format for standard Lebanese workflow redirection
+                const waLink = `https://wa.me/${a.customer_phone.replace('+', '')}?text=Hi%20${encodeURIComponent(a.customer_name)},%20this%20is%20to%20confirm%20your%20Hjezli%20booking%20for%20${encodeURIComponent(appDate)}`;
+                
+                listDiv.innerHTML += `
+                    <div class="p-3 border rounded-md bg-gray-50 flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2">
+                        <div>
+                            <p class="font-bold text-gray-800">${a.customer_name} (${a.customer_phone})</p>
+                            <p class="text-xs text-gray-500">📅 ${appDate} | Status: <span class="font-semibold text-indigo-600">${a.status}</span></p>
+                        </div>
+                        <div class="flex gap-2">
+                            <a href="${waLink}" target="_blank" class="bg-emerald-600 text-white text-xs font-semibold px-2.5 py-1.5 rounded hover:bg-emerald-500 shadow-sm text-center">
+                                WhatsApp Client
+                            </a>
+                            <button onclick="updateStatus(${a.id}, 'Confirmed')" class="bg-indigo-600 text-white text-xs px-2.5 py-1.5 rounded hover:bg-indigo-500">
+                                Confirm
+                            </button>
+                            <button onclick="updateStatus(${a.id}, 'Cancelled')" class="bg-red-100 text-red-700 text-xs px-2.5 py-1.5 rounded hover:bg-red-200">
+                                Cancel
+                            </button>
+                        </div>
+                    </div>
+                `;
+            });
+        }
+
+        async function updateStatus(id, status) {
+            const res = await fetch(`/api/appointments/${id}?status=${status}`, { method: 'PATCH' });
+            if(res.ok) {
+                loadAppointments();
+            }
+        }
+    </script>
+</body>
+</html>
