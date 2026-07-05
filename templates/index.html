@@ -15,52 +15,59 @@
         </div>
     </nav>
 
-    <div class="max-w-4xl mx-auto mt-6 p-4">
-        <div class="bg-amber-50 border-l-4 border-amber-500 text-amber-900 p-4 rounded shadow-sm">
-            <p class="font-bold">💵 Cash Only Economy Policy</p>
-            <p class="text-sm">No credit cards needed. Book your appointment online instantly and pay cash directly to the provider at the shop.</p>
+    <div class="max-w-4xl mx-auto mt-4 p-4">
+        <div class="bg-amber-50 border-l-4 border-amber-500 text-amber-900 p-3 rounded shadow-sm text-sm">
+            <p class="font-bold">💵 Cash Only Policy</p>
+            <p>Book instantly, pay cash directly at the shop.</p>
         </div>
     </div>
 
     <main class="max-w-4xl mx-auto p-4 grid grid-cols-1 md:grid-cols-3 gap-6">
         
-        <div class="md:col-span-1 space-y-6">
+        <div class="md:col-span-1 space-y-4">
             <div class="bg-white p-4 rounded-lg shadow-sm border border-gray-100">
-                <h2 class="font-semibold text-lg mb-3">Find a Service</h2>
-                <label class="block text-sm text-gray-600 mb-1">Location</label>
-                <select id="locationFilter" onchange="loadProviders()" class="w-full p-2 border rounded-md mb-3 bg-gray-50">
+                <h2 class="font-semibold text-base mb-2">Find a Service</h2>
+                <select id="locationFilter" onchange="loadProviders()" class="w-full p-2 border rounded-md text-sm mb-2 bg-gray-50">
                     <option value="">All Lebanon</option>
                     <option value="Beirut">Beirut</option>
                     <option value="Jounieh">Jounieh</option>
                     <option value="Saida">Saida</option>
                     <option value="Tripoli">Tripoli</option>
                 </select>
-
-                <label class="block text-sm text-gray-600 mb-1">Category</label>
-                <select id="categoryFilter" onchange="loadProviders()" class="w-full p-2 border rounded-md bg-gray-50">
-                    <option value="">All Categories</option>
-                    <option value="Barber">Barber / Men's Salon</option>
-                    <option value="Beauty">Beauty Salon</option>
-                    <option value="Spa">Spa & Massage</option>
-                </select>
             </div>
 
             <div id="bookingFormContainer" class="bg-white p-4 rounded-lg shadow-sm border border-gray-100 hidden">
-                <h3 class="font-semibold text-indigo-600 mb-2">Book at <span id="selectedShopName">...</span></h3>
+                <h3 class="font-bold text-indigo-600 mb-3 text-sm">Book at <span id="selectedShopName">...</span></h3>
                 <form id="appointmentForm" onsubmit="submitBooking(event)" class="space-y-3">
                     <input type="hidden" id="selectedProviderId">
+                    
                     <div>
-                        <label class="block text-xs font-semibold text-gray-500">Your Full Name</label>
+                        <label class="block text-xs font-semibold text-gray-500 mb-1">Select Service</label>
+                        <select id="serviceSelect" onchange="generateDiscreteSlots()" required class="w-full p-2 border rounded bg-gray-50 text-sm"></select>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-semibold text-gray-500 mb-1">Your Full Name</label>
                         <input type="text" id="custName" required class="w-full p-2 border rounded bg-gray-50 text-sm">
                     </div>
+
                     <div>
-                        <label class="block text-xs font-semibold text-gray-500">WhatsApp Phone Number</label>
+                        <label class="block text-xs font-semibold text-gray-500 mb-1">WhatsApp Number</label>
                         <input type="tel" id="custPhone" placeholder="+961" required class="w-full p-2 border rounded bg-gray-50 text-sm">
                     </div>
+
                     <div>
-                        <label class="block text-xs font-semibold text-gray-500">Date & Time</label>
-                        <input type="datetime-local" id="appTime" required class="w-full p-2 border rounded bg-gray-50 text-sm">
+                        <label class="block text-xs font-semibold text-gray-500 mb-1">Choose Date</label>
+                        <input type="date" id="appDate" onchange="generateDiscreteSlots()" required class="w-full p-2 border rounded bg-gray-50 text-sm">
                     </div>
+
+                    <div>
+                        <label class="block text-xs font-semibold text-gray-500 mb-1">Available 15-Min Slots</label>
+                        <select id="appTimeSlot" required class="w-full p-2 border rounded bg-gray-50 text-sm">
+                            <option value="">-- Choose a Date First --</option>
+                        </select>
+                    </div>
+
                     <button type="submit" class="w-full bg-green-600 text-white p-2 rounded font-semibold text-sm hover:bg-green-500 shadow">
                         Confirm Free Booking
                     </button>
@@ -69,7 +76,7 @@
         </div>
 
         <div class="md:col-span-2">
-            <h2 class="text-xl font-bold mb-4 text-gray-700">Available Shops</h2>
+            <h2 class="text-lg font-bold mb-3 text-gray-700">Available Shops</h2>
             <div id="providersList" class="space-y-3">
                 <p class="text-gray-500 text-sm">Loading local businesses...</p>
             </div>
@@ -79,10 +86,8 @@
     <script>
         async function loadProviders() {
             const loc = document.getElementById('locationFilter').value;
-            const cat = document.getElementById('categoryFilter').value;
             let url = `/api/providers?`;
-            if(loc) url += `location=${loc}&`;
-            if(cat) url += `category=${cat}`;
+            if(loc) url += `location=${loc}`;
 
             const res = await fetch(url);
             const providers = await res.json();
@@ -90,7 +95,7 @@
             listDiv.innerHTML = '';
 
             if (providers.length === 0) {
-                listDiv.innerHTML = `<p class="text-gray-500 text-sm p-4 bg-white rounded border">No shops registered in this area yet.</p>`;
+                listDiv.innerHTML = `<p class="text-sm p-4 bg-white rounded border text-gray-500">No shops registered here yet.</p>`;
                 return;
             }
 
@@ -98,35 +103,76 @@
                 listDiv.innerHTML += `
                     <div class="bg-white p-4 rounded-lg shadow-sm border border-gray-100 flex justify-between items-center">
                         <div>
-                            <div class="flex items-center gap-2">
-                                <h3 class="font-bold text-lg text-gray-800">${p.business_name}</h3>
-                                ${p.is_premium ? '<span class="bg-amber-100 text-amber-800 text-xs px-2 py-0.5 rounded-full font-semibold">Premium</span>' : ''}
-                            </div>
-                            <p class="text-xs text-gray-500">${p.category} • 📍 ${p.location}</p>
+                            <h3 class="font-bold text-gray-800">${p.business_name}</h3>
+                            <p class="text-xs text-gray-500">📍 ${p.location}</p>
                         </div>
-                        <button onclick="selectShop(${p.id}, '${p.business_name}')" class="bg-indigo-600 text-white text-sm px-4 py-2 rounded font-semibold hover:bg-indigo-500 transition shadow-sm">
-                            Book Now
+                        <button onclick="selectShop(${p.id}, '${p.business_name}')" class="bg-indigo-600 text-white text-xs px-3 py-2 rounded font-semibold hover:bg-indigo-500 shadow-sm">
+                            View Bookings
                         </button>
                     </div>
                 `;
             });
         }
 
-        function selectShop(id, name) {
+        async function selectShop(id, name) {
             document.getElementById('selectedProviderId').value = id;
             document.getElementById('selectedShopName').innerText = name;
+            
+            // Set default date picker value to today
+            document.getElementById('appDate').value = new Date().toISOString().split('T')[0];
+
+            // Fetch services for this specific provider
+            const res = await fetch(`/api/providers/${id}/services`);
+            const services = await res.json();
+            const sSelect = document.getElementById('serviceSelect');
+            sSelect.innerHTML = '';
+
+            if(services.length === 0) {
+                sSelect.innerHTML = '<option value="">No services listed by provider</option>';
+                alert("This business hasn't listed services yet. Please ask them to add services via their manager dashboard.");
+                return;
+            }
+
+            services.forEach(s => {
+                sSelect.innerHTML += `<option value="${s.id}">${s.name} (${s.duration_minutes} mins) - $${s.price_cash_usd}</option>`;
+            });
+
+            generateDiscreteSlots();
             document.getElementById('bookingFormContainer').classList.remove('hidden');
             document.getElementById('bookingFormContainer').scrollIntoView({ behavior: 'smooth' });
         }
 
+        function generateDiscreteSlots() {
+            const slotSelect = document.getElementById('appTimeSlot');
+            slotSelect.innerHTML = '';
+            
+            // Generate clean intervals every 15 minutes from 08:00 AM to 08:00 PM
+            let startHour = 8;
+            let endHour = 20;
+
+            for(let hour = startHour; hour < endHour; hour++) {
+                for(let min of ['00', '15', '30', '45']) {
+                    let displayHour = hour < 10 ? '0' + hour : hour;
+                    let timeValue = `${displayHour}:${min}`;
+                    slotSelect.innerHTML += `<option value="${timeValue}">${timeValue}</option>`;
+                }
+            }
+        }
+
         async function submitBooking(e) {
             e.preventDefault();
+            const dateVal = document.getElementById('appDate').value;
+            const timeVal = document.getElementById('appTimeSlot').value;
+            
+            // Combine string into ISO timestamp format for FastAPI conversion
+            const combinedIsoString = new Date(`${dateVal}T${timeVal}:00`).toISOString();
+
             const payload = {
                 provider_id: parseInt(document.getElementById('selectedProviderId').value),
+                service_id: parseInt(document.getElementById('serviceSelect').value),
                 customer_name: document.getElementById('custName').value,
                 customer_phone: document.getElementById('custPhone').value,
-                appointment_time: new Date(document.getElementById('appTime').value).toISOString(),
-                price_cash_usd: 0.0 // Handled strictly via cash later, default zero metric for generic booking
+                start_time: combinedIsoString
             };
 
             const res = await fetch('/api/appointments', {
@@ -136,15 +182,15 @@
             });
 
             if (res.ok) {
-                alert('🎉 Appointment booked successfully! The vendor will contact you on WhatsApp.');
+                alert('🎉 Appointment booked successfully! Pay cash at the shop.');
                 document.getElementById('appointmentForm').reset();
                 document.getElementById('bookingFormContainer').classList.add('hidden');
             } else {
-                alert('Error processing booking.');
+                const errData = await res.json();
+                alert(`❌ Booking Failed: ${errData.detail || 'Overlap conflict or error.'}`);
             }
         }
 
-        // Initial setup run
         window.onload = loadProviders;
     </script>
 </body>
