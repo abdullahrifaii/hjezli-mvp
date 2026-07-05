@@ -35,50 +35,71 @@
                     <option value="Tripoli">Tripoli</option>
                 </select>
             </div>
-
-            <div id="bookingFormContainer" class="bg-white p-4 rounded-lg shadow-sm border border-gray-100 hidden">
-                <h3 class="font-bold text-indigo-600 mb-3 text-sm">Book at <span id="selectedShopName">...</span></h3>
-                <form id="appointmentForm" onsubmit="submitBooking(event)" class="space-y-3">
-                    <input type="hidden" id="selectedProviderId">
-                    
-                    <div>
-                        <label class="block text-xs font-semibold text-gray-500 mb-1">Select Service</label>
-                        <select id="serviceSelect" onchange="generateDiscreteSlots()" required class="w-full p-2 border rounded bg-gray-50 text-sm"></select>
-                    </div>
-
-                    <div>
-                        <label class="block text-xs font-semibold text-gray-500 mb-1">Your Full Name</label>
-                        <input type="text" id="custName" required class="w-full p-2 border rounded bg-gray-50 text-sm">
-                    </div>
-
-                    <div>
-                        <label class="block text-xs font-semibold text-gray-500 mb-1">WhatsApp Number</label>
-                        <input type="tel" id="custPhone" placeholder="+961" required class="w-full p-2 border rounded bg-gray-50 text-sm">
-                    </div>
-
-                    <div>
-                        <label class="block text-xs font-semibold text-gray-500 mb-1">Choose Date</label>
-                        <input type="date" id="appDate" onchange="generateDiscreteSlots()" required class="w-full p-2 border rounded bg-gray-50 text-sm">
-                    </div>
-
-                    <div>
-                        <label class="block text-xs font-semibold text-gray-500 mb-1">Available 15-Min Slots</label>
-                        <select id="appTimeSlot" required class="w-full p-2 border rounded bg-gray-50 text-sm">
-                            <option value="">-- Choose a Date First --</option>
-                        </select>
-                    </div>
-
-                    <button type="submit" class="w-full bg-green-600 text-white p-2 rounded font-semibold text-sm hover:bg-green-500 shadow">
-                        Confirm Free Booking
-                    </button>
-                </form>
-            </div>
         </div>
 
-        <div class="md:col-span-2">
+        <div class="md:col-span-2 space-y-4">
             <h2 class="text-lg font-bold mb-3 text-gray-700">Available Shops</h2>
             <div id="providersList" class="space-y-3">
                 <p class="text-gray-500 text-sm">Loading local businesses...</p>
+            </div>
+
+            <div id="shopDashboardContainer" class="bg-white p-6 rounded-lg shadow-md border border-gray-100 hidden space-y-6">
+                
+                <div class="border-b pb-3">
+                    <h3 class="text-xl font-bold text-indigo-600"><span id="selectedShopName">...</span> Dashboard</h3>
+                </div>
+
+                <div>
+                    <h4 class="font-bold text-gray-700 mb-2 text-sm uppercase tracking-wide">📅 Current Schedule</h4>
+                    <div id="shopBookingsSchedule" class="space-y-2 max-h-48 overflow-y-auto pr-1">
+                        </div>
+                </div>
+
+                <hr class="border-gray-100" />
+
+                <div>
+                    <button id="toggleFormBtn" onclick="toggleBookingForm()" class="w-full bg-indigo-600 text-white p-2.5 rounded font-semibold text-sm hover:bg-indigo-500 shadow transition text-center block">
+                        ➕ Book a New Appointment Here
+                    </button>
+
+                    <form id="appointmentForm" onsubmit="submitBooking(event)" class="space-y-3 hidden mt-4 bg-gray-50 p-4 rounded-lg border border-gray-200">
+                        <h4 class="font-bold text-gray-800 text-sm mb-2">New Appointment Form</h4>
+                        <input type="hidden" id="selectedProviderId">
+                        
+                        <div>
+                            <label class="block text-xs font-semibold text-gray-500 mb-1">Select Service</label>
+                            <select id="serviceSelect" onchange="generateDiscreteSlots()" required class="w-full p-2 border rounded bg-white text-sm"></select>
+                        </div>
+
+                        <div>
+                            <label class="block text-xs font-semibold text-gray-500 mb-1">Your Full Name</label>
+                            <input type="text" id="custName" required class="w-full p-2 border rounded bg-white text-sm">
+                        </div>
+
+                        <div>
+                            <label class="block text-xs font-semibold text-gray-500 mb-1">WhatsApp Number</label>
+                            <input type="tel" id="custPhone" placeholder="+961" required class="w-full p-2 border rounded bg-white text-sm">
+                        </div>
+
+                        <div>
+                            <label class="block text-xs font-semibold text-gray-500 mb-1">Choose Date</label>
+                            <input type="date" id="appDate" onchange="generateDiscreteSlots()" required class="w-full p-2 border rounded bg-white text-sm">
+                        </div>
+
+                        <div>
+                            <label class="block text-xs font-semibold text-gray-500 mb-1">Available 15-Min Slots</label>
+                            <select id="appTimeSlot" required class="w-full p-2 border rounded bg-white text-sm">
+                                <option value="">-- Choose a Date First --</option>
+                            </select>
+                        </div>
+
+                        <div class="flex gap-2 pt-2">
+                            <button type="button" onclick="toggleBookingForm()" class="w-1/3 bg-gray-300 text-gray-700 p-2 rounded text-sm font-semibold">Cancel</button>
+                            <button type="submit" class="w-2/3 bg-green-600 text-white p-2 rounded font-semibold text-sm hover:bg-green-500 shadow">Confirm Free Booking</button>
+                        </div>
+                    </form>
+                </div>
+
             </div>
         </div>
     </main>
@@ -104,7 +125,7 @@
                     <div class="bg-white p-4 rounded-lg shadow-sm border border-gray-100 flex justify-between items-center">
                         <div>
                             <h3 class="font-bold text-gray-800">${p.business_name}</h3>
-                            <p class="text-xs text-gray-500">📍 ${p.location}</p>
+                            <p class="text-xs text-gray-500">📍 ${p.location} | ${p.category}</p>
                         </div>
                         <button onclick="selectShop(${p.id}, '${p.business_name}')" class="bg-indigo-600 text-white text-xs px-3 py-2 rounded font-semibold hover:bg-indigo-500 shadow-sm">
                             View Bookings
@@ -118,35 +139,73 @@
             document.getElementById('selectedProviderId').value = id;
             document.getElementById('selectedShopName').innerText = name;
             
-            // Set default date picker value to today
-            document.getElementById('appDate').value = new Date().toISOString().split('T')[0];
+            // Hide registration form dynamically on shop selection change
+            document.getElementById('appointmentForm').classList.add('hidden');
+            document.getElementById('toggleFormBtn').classList.remove('hidden');
 
-            // Fetch services for this specific provider
-            const res = await fetch(`/api/providers/${id}/services`);
-            const services = await res.json();
+            // 1. Fetch & Display current schedule for this specific provider
+            const appointmentsRes = await fetch(`/api/providers/${id}/appointments`);
+            const appointments = await appointmentsRes.json();
+            const scheduleDiv = document.getElementById('shopBookingsSchedule');
+            scheduleDiv.innerHTML = '';
+
+            if(appointments.length === 0) {
+                scheduleDiv.innerHTML = `<p class="text-sm text-gray-400 italic bg-gray-50 p-3 rounded text-center border border-dashed">No appointments scheduled yet. Be the first to book!</p>`;
+            } else {
+                appointments.forEach(a => {
+                    const start = new Date(a.start_time).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+                    const end = new Date(a.end_time).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+                    const dateStr = new Date(a.start_time).toLocaleDateString([], {month: 'short', day: 'numeric'});
+                    
+                    scheduleDiv.innerHTML += `
+                        <div class="text-xs bg-gray-100 p-2.5 rounded border border-gray-200 flex justify-between items-center">
+                            <span class="font-medium text-gray-700">🔒 Reserved Slot</span>
+                            <span class="bg-indigo-100 text-indigo-800 px-2 py-0.5 rounded font-mono font-semibold">${dateStr} @ ${start} - ${end}</span>
+                        </div>
+                    `;
+                });
+            }
+
+            // 2. Fetch services menu items to fill out booking inputs
+            const servicesRes = await fetch(`/api/providers/${id}/services`);
+            const services = await servicesRes.json();
             const sSelect = document.getElementById('serviceSelect');
             sSelect.innerHTML = '';
 
             if(services.length === 0) {
-                sSelect.innerHTML = '<option value="">No services listed by provider</option>';
-                alert("This business hasn't listed services yet. Please ask them to add services via their manager dashboard.");
-                return;
+                sSelect.innerHTML = '<option value="">No services listed</option>';
+            } else {
+                services.forEach(s => {
+                    sSelect.innerHTML += `<option value="${s.id}">${s.name} (${s.duration_minutes} mins) - $${s.price_cash_usd}</option>`;
+                });
             }
 
-            services.forEach(s => {
-                sSelect.innerHTML += `<option value="${s.id}">${s.name} (${s.duration_minutes} mins) - $${s.price_cash_usd}</option>`;
-            });
-
+            // Set default date logic
+            document.getElementById('appDate').value = new Date().toISOString().split('T')[0];
             generateDiscreteSlots();
-            document.getElementById('bookingFormContainer').classList.remove('hidden');
-            document.getElementById('bookingFormContainer').scrollIntoView({ behavior: 'smooth' });
+
+            // Unveil dashboard wrapper smoothly
+            const container = document.getElementById('shopDashboardContainer');
+            container.classList.remove('hidden');
+            container.scrollIntoView({ behavior: 'smooth' });
+        }
+
+        function toggleBookingForm() {
+            const form = document.getElementById('appointmentForm');
+            const btn = document.getElementById('toggleFormBtn');
+            if (form.classList.contains('hidden')) {
+                form.classList.remove('hidden');
+                btn.classList.add('hidden');
+            } else {
+                form.classList.add('hidden');
+                btn.classList.remove('hidden');
+            }
         }
 
         function generateDiscreteSlots() {
             const slotSelect = document.getElementById('appTimeSlot');
             slotSelect.innerHTML = '';
             
-            // Generate clean intervals every 15 minutes from 08:00 AM to 08:00 PM
             let startHour = 8;
             let endHour = 20;
 
@@ -161,14 +220,15 @@
 
         async function submitBooking(e) {
             e.preventDefault();
+            const shopId = document.getElementById('selectedProviderId').value;
+            const shopName = document.getElementById('selectedShopName').innerText;
             const dateVal = document.getElementById('appDate').value;
             const timeVal = document.getElementById('appTimeSlot').value;
             
-            // Combine string into ISO timestamp format for FastAPI conversion
             const combinedIsoString = new Date(`${dateVal}T${timeVal}:00`).toISOString();
 
             const payload = {
-                provider_id: parseInt(document.getElementById('selectedProviderId').value),
+                provider_id: parseInt(shopId),
                 service_id: parseInt(document.getElementById('serviceSelect').value),
                 customer_name: document.getElementById('custName').value,
                 customer_phone: document.getElementById('custPhone').value,
@@ -184,10 +244,10 @@
             if (res.ok) {
                 alert('🎉 Appointment booked successfully! Pay cash at the shop.');
                 document.getElementById('appointmentForm').reset();
-                document.getElementById('bookingFormContainer').classList.add('hidden');
+                selectShop(shopId, shopName); // Instantly reloads schedule list view
             } else {
                 const errData = await res.json();
-                alert(`❌ Booking Failed: ${errData.detail || 'Overlap conflict or error.'}`);
+                alert(`❌ Booking Failed: ${errData.detail || 'Overlap conflict.'}`);
             }
         }
 
