@@ -136,35 +136,70 @@
         }
 
         async function selectShop(id, name) {
-            document.getElementById('selectedProviderId').value = id;
-            document.getElementById('selectedShopName').innerText = name;
-            
-            // Hide registration form dynamically on shop selection change
-            document.getElementById('appointmentForm').classList.add('hidden');
-            document.getElementById('toggleFormBtn').classList.remove('hidden');
+            try {
+                document.getElementById('selectedProviderId').value = id;
+                document.getElementById('selectedShopName').innerText = name;
+        
+                document.getElementById('appointmentForm').classList.add('hidden');
+                document.getElementById('toggleFormBtn').classList.remove('hidden');
 
-            // 1. Fetch & Display current schedule for this specific provider
-            const appointmentsRes = await fetch(`/api/providers/${id}/appointments`);
-            const appointments = await appointmentsRes.json();
-            const scheduleDiv = document.getElementById('shopBookingsSchedule');
-            scheduleDiv.innerHTML = '';
+                    // 1. Fetch Schedule
+                console.log(`Fetching appointments for shop ID: ${id}`);
+                const appointmentsRes = await fetch(`/api/providers/${id}/appointments`);
+                if (!appointmentsRes.ok) throw new Error("Failed to fetch appointments from server");
+        
+                const appointments = await appointmentsRes.json();
+                const scheduleDiv = document.getElementById('shopBookingsSchedule');
+                scheduleDiv.innerHTML = '';
 
-            if(appointments.length === 0) {
-                scheduleDiv.innerHTML = `<p class="text-sm text-gray-400 italic bg-gray-50 p-3 rounded text-center border border-dashed">No appointments scheduled yet. Be the first to book!</p>`;
-            } else {
-                appointments.forEach(a => {
-                    const start = new Date(a.start_time).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
-                    const end = new Date(a.end_time).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
-                    const dateStr = new Date(a.start_time).toLocaleDateString([], {month: 'short', day: 'numeric'});
-                    
-                    scheduleDiv.innerHTML += `
-                        <div class="text-xs bg-gray-100 p-2.5 rounded border border-gray-200 flex justify-between items-center">
-                            <span class="font-medium text-gray-700">🔒 Reserved Slot</span>
-                            <span class="bg-indigo-100 text-indigo-800 px-2 py-0.5 rounded font-mono font-semibold">${dateStr} @ ${start} - ${end}</span>
-                        </div>
-                    `;
-                });
+                if(appointments.length === 0) {
+                    scheduleDiv.innerHTML = `<p class="text-sm text-gray-400 italic bg-gray-50 p-3 rounded text-center border border-dashed">No appointments scheduled yet. Be the first to book!</p>`;
+                } else {
+                    appointments.forEach(a => {
+                        const start = new Date(a.start_time).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+                        const end = new Date(a.end_time).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+                        const dateStr = new Date(a.start_time).toLocaleDateString([], {month: 'short', day: 'numeric'});
+                
+                        scheduleDiv.innerHTML += `
+                            <div class="text-xs bg-gray-100 p-2.5 rounded border border-gray-200 flex justify-between items-center">
+                                <span class="font-medium text-gray-700">🔒 Reserved Slot</span>
+                                <span class="bg-indigo-100 text-indigo-800 px-2 py-0.5 rounded font-mono font-semibold">${dateStr} @ ${start} - ${end}</span>
+                            </div>
+                        `;
+                    });
+                }
+
+                // 2. Fetch Services Menu
+                console.log(`Fetching services for shop ID: ${id}`);
+                const servicesRes = await fetch(`/api/providers/${id}/services`);
+                if (!servicesRes.ok) throw new Error("Failed to fetch services from server");
+        
+                const services = await servicesRes.json();
+                const sSelect = document.getElementById('serviceSelect');
+                sSelect.innerHTML = '';
+
+                if(services.length === 0) {
+                    sSelect.innerHTML = '<option value="">No services listed</option>';
+                    alert("⚠️ This business hasn't added any services yet! Go to the /provider page and add a service for this Business ID first.");
+                } else {
+                    services.forEach(s => {
+                        sSelect.innerHTML += `<option value="${s.id}">${s.name} (${s.duration_minutes} mins) - $${s.price_cash_usd}</option>`;
+                    });
+                }
+
+                // Setup date & reveal panel
+                document.getElementById('appDate').value = new Date().toISOString().split('T')[0];
+                generateDiscreteSlots();
+
+                const container = document.getElementById('shopDashboardContainer');
+                container.classList.remove('hidden');
+                container.scrollIntoView({ behavior: 'smooth' });
+
+            } catch (error) {
+                console.error("CRITICAL UI ERROR:", error);
+                alert(`❌ Connection Error: ${error.message}. Check your terminal logs or database content!`);
             }
+        }
 
             // 2. Fetch services menu items to fill out booking inputs
             const servicesRes = await fetch(`/api/providers/${id}/services`);
