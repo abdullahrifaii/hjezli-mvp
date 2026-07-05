@@ -30,7 +30,7 @@ def get_db():
         db.close()
 
 # ==========================================
-# 2. DATABASE TABLES (PostgreSQL Schema)
+# 2. DATABASE TABLES (Updated)
 # ==========================================
 class DBProvider(Base):
     __tablename__ = "providers"
@@ -41,20 +41,29 @@ class DBProvider(Base):
     location = Column(String, nullable=False)
     is_premium = Column(Boolean, default=False)
 
+class DBService(Base):
+    __tablename__ = "services"
+    id = Column(Integer, primary_key=True, index=True)
+    provider_id = Column(Integer, ForeignKey("providers.id"), nullable=False)
+    name = Column(String, nullable=False)          # e.g., "Standard Haircut"
+    duration_minutes = Column(Integer, nullable=False) # e.g., 40
+    price_cash_usd = Column(Float, nullable=False)
+
 class DBAppointment(Base):
     __tablename__ = "appointments"
     id = Column(Integer, primary_key=True, index=True)
     provider_id = Column(Integer, ForeignKey("providers.id"), nullable=False)
+    service_id = Column(Integer, ForeignKey("services.id"), nullable=False)
     customer_name = Column(String, nullable=False)
     customer_phone = Column(String, nullable=False)
-    appointment_time = Column(DateTime, nullable=False)
-    price_cash_usd = Column(Float, nullable=False)
+    start_time = Column(DateTime, nullable=False)
+    end_time = Column(DateTime, nullable=False)   # Calculated automatically on creation
     status = Column(String, default="Pending")
 
 Base.metadata.create_all(bind=engine)
 
 # ==========================================
-# 3. PYDANTIC SCHEMAS (Data Validation)
+# 3. PYDANTIC SCHEMAS (Updated)
 # ==========================================
 class ProviderCreate(BaseModel):
     business_name: str
@@ -65,27 +74,37 @@ class ProviderCreate(BaseModel):
 class ProviderResponse(ProviderCreate):
     id: int
     is_premium: bool
-    class Config:
-        from_attributes = True
+    class Config: from_attributes = True
+
+class ServiceCreate(BaseModel):
+    provider_id: int
+    name: str
+    duration_minutes: int
+    price_cash_usd: float
+
+class ServiceResponse(ServiceCreate):
+    id: int
+    class Config: from_attributes = True
 
 class AppointmentCreate(BaseModel):
     provider_id: int
+    service_id: int
     customer_name: str
     customer_phone: str
-    appointment_time: datetime
-    price_cash_usd: float
+    start_time: datetime
 
 class AppointmentResponse(AppointmentCreate):
     id: int
+    end_time: datetime
     status: str
-    class Config:
-        from_attributes = True
+    class Config: from_attributes = True
 
 # ==========================================
 # 4. HJEZLI APP & API ROUTES
 # ==========================================
 app = FastAPI(title="Hjezli (حجزلي) API", version="1.0.0")
 
+# --- Provider Endpoints ---
 @app.post("/api/providers", response_model=ProviderResponse)
 def register_provider(provider: ProviderCreate, db: Session = Depends(get_db)):
     db_provider = DBProvider(**provider.model_dump())
@@ -103,12 +122,52 @@ def list_providers(category: Optional[str] = None, location: Optional[str] = Non
         query = query.filter(DBProvider.location == location)
     return query.all()
 
+# --- Service Endpoints ---
+@app.post("/api/services", response_model=ServiceResponse)
+def create_service(service: ServiceCreate, db: Session = Depends(get_db)):
+    db_service = DBService(**service.model_dump())
+    db.add(db_service)
+    db.commit()
+    db.refresh(db_service)
+    return db_service
+
+@app.get("/api/providers/{provider_id}/services", response_model=List[ServiceResponse])
+def list_provider_services(provider_id: int, db: Session = Depends(get_db)):
+    return db.query(DBService).filter(DBService.provider_id == provider_id).all()
+
+# --- Smart Overlap Protected Appointment Booking ---
 @app.post("/api/appointments", response_model=AppointmentResponse)
 def create_appointment(appointment: AppointmentCreate, db: Session = Depends(get_db)):
-    provider = db.query(DBProvider).filter(DBProvider.id == appointment.provider_id).first()
-    if not provider:
-        raise HTTPException(status_code=404, detail="Provider not found")
-    db_appointment = DBAppointment(**appointment.model_dump())
+    service = db.query(DBService).filter(DBService.id == appointment.service_id).first()
+    if not service:
+        raise HTTPException(status_code=404, detail="Selected service does not exist")
+    
+    req_start = appointment.start_time
+    req_end = req_start + timedelta(minutes=service.duration_minutes)
+    
+    # Anti-overbooking query
+    overlapping_booking = db.query(DBAppointment).filter(
+        DBAppointment.provider_id == appointment.provider_id,
+        DBAppointment.status.in_(["Pending", "Confirmed"]),
+        DBAppointment.start_time < req_end,
+        DBAppointment.end_time > req_start
+    ).first()
+    
+    if overlapping_booking:
+        raise HTTPException(
+            status_code=400, 
+            detail=f"Time slot conflict! This provider is fully booked from {overlapping_booking.start_time.strftime('%H:%M')} to {overlapping_booking.end_time.strftime('%H:%M')}."
+        )
+    
+    db_appointment = DBAppointment(
+        provider_id=appointment.provider_id,
+        service_id=appointment.service_id,
+        customer_name=appointment.customer_name,
+        customer_phone=appointment.customer_phone,
+        start_time=req_start,
+        end_time=req_end,
+        status="Pending"
+    )
     db.add(db_appointment)
     db.commit()
     db.refresh(db_appointment)
@@ -141,3 +200,4 @@ def read_customer_ui():
 def read_provider_ui():
     with open("templates/provider.html", "r", encoding="utf-8") as f:
         return f.read()
+
